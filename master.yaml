@@ -1,0 +1,113 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Stack to deploy a highly available, elastic, scalable WordPress environment. This master stack launches multiple nested stacks for different tiers. !! This can only be run in certain AWS Regions - 'us-east-1', 'us-east-2', 'us-west-2', 'eu-west-1'.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Network
+      Parameters:
+        - VPC
+        - NumberOfAZs
+        - AvailabilityZones
+        - ExternalSubnet0Cidr
+        - ExternalSubnet1Cidr
+        - WebSubnet0Cidr
+        - WebSubnet1Cidr
+        - DataSubnet0Cidr
+        - DataSubnet1Cidr
+    ParameterLabels:
+        VPC:
+          default: The VPC to select in the available region. 
+        ExternalSubnet0Cidr:
+          default: Resources placed in this subnet are rechable via the Internet.
+        ExternalSubnet1Cidr:
+          default: Resources placed in this subnet are rechable via the Internet.
+        WebSubnet0Cidr:
+          default: Web Subnet 0
+        WebSubnet1Cidr:
+          default: Web Subnet 1
+        DataSubnet0Cidr:
+          default: Data Subnet 0
+        DataSubnet1Cidr:
+          default: Data Subnet 1
+        
+Parameters:
+  VPC:
+    Description: List of Available VPCs to Select in the Region. 
+    Type: AWS::EC2::VPC::Id
+  NumberOfAZs:
+    Description: Number of Availability Zones to use in the VPC.
+    Type: Number
+    Default: 2
+    AllowedValues:
+      - 2
+  AvailabilityZones:
+    Description: 'List of Availability Zones to use for the subnets in the VPC. Note:
+      The logical order is preserved.'
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+  ExternalSubnet0Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 172.31.10.0/24
+    Description: CIDR block for Public subnet
+    Type: String
+  ExternalSubnet1Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 172.31.11.0/24
+    Description: CIDR block for Public subnet 
+    Type: String
+  WebSubnet0Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 172.31.12.0/24
+    Description: CIDR block for Web subnet 0 located in Availability Zone 0
+    Type: String
+  WebSubnet1Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 172.31.13.0/24
+    Description: CIDR block for Web subnet 1 located in Availability Zone 1
+    Type: String
+  DataSubnet0Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 172.31.14.0/24
+    Description: CIDR block for data subnet 0 located in Availability Zone 0
+    Type: String
+  DataSubnet1Cidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 172.31.15.0/24
+    Description: CIDR block for data subnet 1 located in Availability Zone 1
+    Type: String
+
+Resources:
+  newsubnets:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        NumberOfAZs:
+          !Ref NumberOfAZs
+        Vpc:
+          !Ref VPC
+        AvailabilityZones:
+          !Join
+            - ','
+            - !Ref AvailabilityZones
+        PublicSubnet0Cidr:
+          !Ref ExternalSubnet0Cidr
+        PublicSubnet1Cidr:
+          !Ref ExternalSubnet1Cidr
+        WebSubnet0Cidr:
+          !Ref WebSubnet0Cidr
+        WebSubnet1Cidr:
+          !Ref WebSubnet1Cidr
+        DataSubnet0Cidr:
+          !Ref DataSubnet0Cidr
+        DataSubnet1Cidr:
+          !Ref DataSubnet1Cidr
+      TemplateURL: https://s3-us-west-2.amazonaws.com/mynewcloudformationtemplates/01-network.yaml
